@@ -1,0 +1,4 @@
+
+docker_path: /path/to/docker/folder/on/host
+path: /path/
+docker_git: https://your/repo/url

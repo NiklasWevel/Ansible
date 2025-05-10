@@ -1,0 +1,64 @@
+- hosts: all
+  become: yes
+
+  vars:
+    node_exporter_tls_server_config:
+      cert_file: "{{ NODE_EXPORTER_PATH }}/tls.cert"
+      key_file: "{{ NODE_EXPORTER_PATH }}/tls.key"
+    node_exporter_basic_auth_users:  
+      node-exp: "{{ NODE_EXPORTER_PASSWD }}"
+      
+  tasks:
+    - name: Install Python libraries for crypto module
+      ansible.builtin.apt:
+        name: 
+          - python3-cryptography
+        state: present
+
+    - name: Create node-exp group
+      ansible.builtin.group:
+        name: "{{ NODE_EXPORTER_GROUP_NAME }}"
+        gid: "{{ NODE_EXPORTER_GID }}"
+        state: present
+
+    - name: Create node-exp user
+      ansible.builtin.user:
+        name: "{{ NODE_EXPORTER_USER_NAME }}"
+        uid: "{{ NODE_EXPORTER_UID }}"
+        create_home: false
+        group: "{{ NODE_EXPORTER_GID }}"
+        state: present
+
+    - name: Create node_exporter cert dir
+      ansible.builtin.file:
+        path: "{{ NODE_EXPORTER_PATH }}"
+        state: directory
+        owner: "{{ NODE_EXPORTER_USER_NAME }}"
+        group: "{{ NODE_EXPORTER_GROUP_NAME }}"
+
+    - name: Create private key if it does not exist
+      community.crypto.openssl_privatekey:
+        path: "{{ NODE_EXPORTER_PATH }}/tls.key"
+        type: RSA
+        size: 4096
+
+    - name: Create self-signed certificate if it does not exist
+      community.crypto.x509_certificate:
+        path: "{{ NODE_EXPORTER_PATH }}/tls.cert"
+        privatekey_path: "{{ NODE_EXPORTER_PATH }}/tls.key"
+        provider: selfsigned
+        state: present
+
+    - name: Ensure correct ownership of TLS files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: "{{ NODE_EXPORTER_USER_NAME }}" 
+        group: "{{ NODE_EXPORTER_GROUP_NAME }}" 
+        mode: '0600'
+      loop:
+        - "{{ NODE_EXPORTER_PATH }}/tls.key"
+        - "{{ NODE_EXPORTER_PATH }}/tls.cert"
+
+    - name: Run node_exporter role
+      ansible.builtin.include_role:
+        name: prometheus.prometheus.node_exporter

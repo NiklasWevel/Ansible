@@ -1,0 +1,14 @@
+- name: Update LXC
+  hosts: all
+  serial: 5
+  become: yes
+  tasks:
+    - name: apt update
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: apt upgrade
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: no

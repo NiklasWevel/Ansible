@@ -1,0 +1,2 @@
+compose_dirs: 
+    - /subfolder/dockername/in/your/repo

@@ -1,0 +1,17 @@
+vault_pass.txt
+
+*.retry
+*.log
+
+
+.env
+.env.*
+
+
+*.pem
+*.key
+*.crt
+*.pub
+
+*.vault.yml
+

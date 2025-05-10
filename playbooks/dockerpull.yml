@@ -1,0 +1,41 @@
+---
+- name: Docker Pull and restart all Dockers
+  hosts: Docker
+  become: true
+#  vars:
+#    docker_path
+#    compose_dirs
+
+  tasks:
+    - name: Check if required docker directories exist
+      stat:
+        path: "{{ docker_path }}/{{ item }}"
+      loop: "{{ compose_dirs }}"
+      register: dir_checks
+
+    - name: Fail if any directory is missing
+      fail:
+        msg: "Directory {{ item.stat.path }} is missing!"
+      loop: "{{ dir_checks.results }}"
+      when: not item.stat.exists
+
+    - name: Check if docker-compose.yml exists in Docker path
+      stat:
+        path: "{{ docker_path }}/{{ item }}/docker-compose.yml"
+      loop: "{{ compose_dirs }}"
+      register: compose_ymls
+
+    - name: Docker pull
+      shell: docker compose pull
+      args:
+        chdir: "{{ docker_path }}/{{ item.item }}"
+      loop: "{{ compose_ymls.results }}"
+      register: docker_pull
+      when: item.stat.exists
+
+    - name: Docker compose up if image was pulled
+      shell: docker compose up -d --force-recreate --remove-orphans
+      args:
+        chdir: "{{ docker_path }}/{{ item.item }}"
+      loop: "{{ docker_pull.results }}"
+      when: when: item.changed

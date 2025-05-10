@@ -1,0 +1,36 @@
+---
+- name: Clean up Docker and remove empty directories
+  hosts: Docker
+  become: true
+  tasks:
+
+    - name: Stop all running Docker containers
+      shell: |
+        if [ "$(docker ps -q)" != "" ]; then
+          docker kill $(docker ps -q)
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Remove all unused Docker data (volumes, images, networks)
+      shell: docker system prune -af
+
+    - name: Find all empty directories in path
+      find:
+        paths: "{{ path }}"
+        file_type: directory
+        recurse: false
+        hidden: yes
+        patterns: '*'
+      register: found_dirs
+
+    - name: Check if the Docker path exists
+      stat:
+        path: "{{ docker_path }}"
+      register: docker_stat
+
+    - name: Delete Docker path if it exists
+      file:
+        path: "{{ docker_path }}"
+        state: absent
+      when: docker_stat.stat.exists

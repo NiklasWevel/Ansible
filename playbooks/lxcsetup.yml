@@ -1,0 +1,61 @@
+---
+- name: Setup LXC
+  hosts: all
+  become: yes
+  tasks:
+    - name: apt update
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: apt upgrade
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: no
+
+    - name: Add de_DE.UTF-8 to /etc/locale.gen 
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: '^#?de_DE.UTF-8 UTF-8'
+        line: 'de_DE.UTF-8 UTF-8'
+        state: present
+
+    - name: Execute locale-gen
+      ansible.builtin.command: locale-gen
+      changed_when: false
+
+    - name: Set update-locale LANG=de_DE.UTF-8
+      ansible.builtin.command: update-locale LANG=de_DE.UTF-8
+      changed_when: false
+
+    - name: Add LANG=de_DE.UTF-8 to /etc/environment
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: LANG=de_DE.UTF-8
+        create: yes
+        state: present
+
+    - name: Install dependencys
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - htop
+          - tree
+        state: present
+        update_cache: no
+
+    - name: Add group with GID
+      ansible.builtin.group:
+        name: "{{ lxc_user }}"
+        gid: "{{ lxc_user_id }}"
+        state: present
+
+    - name: Add user with UID
+      ansible.builtin.user:
+        name: "{{ lxc_group }}"
+        uid: "{{ lxc_group_id }}"
+        group: share
+        shell: /bin/bash
+        create_home: yes
+        state: present
