@@ -68,11 +68,12 @@
 
     - name: Copy static .env files
       copy:
-        src: "files/{{ item }}.env"
+        src: "../vault/env/{{ item }}.env"
         dest: "{{ clone_dir }}/{{ item }}/.env"
       loop: "{{ compose_dirs }}"
       ignore_errors: true  # Optional: skip if no template exists
       tags: env
+
 
     - name: Run Docker Compose
       shell: |
